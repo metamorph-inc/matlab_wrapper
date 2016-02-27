@@ -1,0 +1,13 @@
+# Install Python 2.7.11 32bit
+# c:\Python27\python -m pip install virtualenv
+# c:\Python27\python -m virtualenv venv
+# .\venv\Scripts\pip.exe install -r requirements.txt
+
+--index-url https://pypi.metamorphsoftware.com/
+--extra-index-url https://pypi.python.org/simple
+numpy==1.10.4
+scipy==0.17.0
+smop==0.23-148-g8a425ea
+six==1.10.0
+# FIXME: 1.5.0 doesn't have FileRefs
+openmdao==1.5.0

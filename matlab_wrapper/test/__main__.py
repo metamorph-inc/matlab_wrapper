@@ -1,5 +1,5 @@
 from matlab_wrapper import MatlabWrapper
-from openmdao.api import FileRef
+# from openmdao.api import FileRef
 import numpy
 import json
 
@@ -8,8 +8,8 @@ c = MatlabWrapper('matlab_wrapper\\test\\stat2.m')
 
 
 def default(obj):
-    if isinstance(obj, FileRef):
-        return repr(obj)
+    # if isinstance(obj, FileRef):
+    #     return repr(obj)
     if isinstance(obj, numpy.ndarray):
         return repr(obj)
     raise TypeError(repr(obj) + " is not JSON serializable")
