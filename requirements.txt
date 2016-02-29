@@ -1,7 +1,10 @@
-# Install Python 2.7.11 32bit
+# Install Python 2.7 32bit
 # c:\Python27\python -m pip install virtualenv
 # c:\Python27\python -m virtualenv venv
 # .\venv\Scripts\pip.exe install -r requirements.txt
+
+# set PYTHONPATH=.
+# .\venv\Scripts\python matlab_wrapper/test/__main__.py
 
 --index-url https://pypi.metamorphsoftware.com/
 --extra-index-url https://pypi.python.org/simple

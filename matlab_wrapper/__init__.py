@@ -103,7 +103,7 @@ class MatlabWrapper(Component):
                     self._coerce_val(var)
 
     def solve_nonlinear(self, params, unknowns, resids):
-        args = [params.get(name) for name in self._input_names]
+        args = [params[name] for name in self._input_names]
 
         def set_unknowns(outputs):
             for i, name in enumerate(self._output_names):
