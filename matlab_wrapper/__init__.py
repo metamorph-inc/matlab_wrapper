@@ -113,7 +113,7 @@ class MatlabWrapper(Component):
             out = StringIO.StringIO()
             err = StringIO.StringIO()
 
-            outputs = getattr(self.eng, self.basename)(*args, nargout=len(self.output_names), stdout=out, stderr=err)
+            outputs = getattr(self.eng, self.basename)(*args, nargout=len(self._output_names), stdout=out, stderr=err)
 
             set_unknowns(outputs)
         else:
