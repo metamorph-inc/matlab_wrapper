@@ -4,12 +4,8 @@ from openmdao.api import Component
 import sys
 import os
 import os.path
-import inspect
 import json
 import six
-import importlib
-
-import StringIO
 
 import smop
 import smop.parse
@@ -59,27 +55,9 @@ class MatlabWrapper(Component):
         for output in self._output_names:
             self.add_output(output, val=0.0)
 
-        try:
-            import matlab.engine
-            self.eng = matlab.engine.start_matlab()
-            self.eng.addpath(os.path.dirname(os.path.abspath(mFile)), nargout=0)
-            # self.eng.addpath(r'C:\AVM-M\Seeker\AVM_Seeker_Modelling - Version_2.1', nargout=0)
-        except ImportError as e:
-            import warnings
-            warnings.warn("Failed to import matlab.engine: %s" % e, RuntimeWarning)
-            self.eng = None
-            imports = ['from smop.runtime import *',
-                       'from smop.core import *']
-
-            # FIXME won't work for files with dependencies
-            source = '\n\n'.join(imports + [smop.backend.backend(func_obj) for func_obj in self.func_list])
-            with open(self.basename + '.py', 'wb') as out:
-                out.write(source)
-            code = compile(source, self.basename + '.py', 'exec')
-            mod = {}
-            # eval(code, six.moves.builtins, mod)
-            eval(code, mod, mod)
-            self.func = mod[self.basename]
+        from matlab_wrapper.proxy import get_matlab_engine
+        self.eng = get_matlab_engine()
+        self.eng.addpath(os.path.dirname(os.path.abspath(mFile)), nargout=0)
 
     def __del__(self):
         # TODO
@@ -109,20 +87,42 @@ class MatlabWrapper(Component):
             for i, name in enumerate(self._output_names):
                 unknowns[name] = outputs[i]
 
-        if self.eng is not None:
-            out = StringIO.StringIO()
-            err = StringIO.StringIO()
+        out = six.StringIO()
+        err = six.StringIO()
 
-            outputs = getattr(self.eng, self.basename)(*args, nargout=len(self._output_names), stdout=out, stderr=err)
+        outputs = getattr(self.eng, self.basename)(*args, nargout=len(self._output_names), stdout=out, stderr=err)
 
-            set_unknowns(outputs)
-        else:
-            outputs = self.func(*args)
-
-            set_unknowns(outputs)
+        set_unknowns(outputs)
 
 
 if __name__ == '__main__':
-    # print(repr(sys.argv[1:]))
-    c = MatlabWrapper(*sys.argv[1:])
+    import argparse
+
+    parser = argparse.ArgumentParser(description='MATLAB OpenMDAO wrapper')
+    parser.add_argument('--run', action='store_true')
+    parser.add_argument('mfile', nargs=1)
+
+    args = parser.parse_args()
+
+    c = MatlabWrapper(args.mfile[0])
     print((json.dumps({'params': c._init_params_dict, 'unknowns': c._init_unknowns_dict})))
+
+    if args.run:
+        from openmdao.api import IndepVarComp, Problem, Group
+
+        top = Problem()
+
+        root = top.root = Group()
+
+        root.add('p1', IndepVarComp('x', 3.0))
+        root.add('p2', IndepVarComp('y', -4.0))
+        root.add('c', c)
+
+        root.connect('p1.x', 'c.a')
+        root.connect('p2.y', 'c.b')
+        root.connect('p2.y', 'c.c')
+
+        top.setup()
+        top.run()
+
+        print(root.c.unknowns['m'])
