@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from openmdao.api import Component
-import sys
 import os
 import os.path
 import json
@@ -46,7 +45,9 @@ class MatlabWrapper(Component):
         self.basename = os.path.basename(mfname)
 
         self.func_list = func_list = import_mfile(mFile)
-        fn = [f for f in func_list if type(f) == smop.node.function and f.head.ident.name == self.basename][0]
+        fn = [f for f in func_list if type(f) == smop.node.function and f.head.ident.name == self.basename]
+        if not fn:
+            raise ValueError("Could not find function named '{0}' in file '{1}'".format(self.basename, os.path.basename(self.mFile)))
         self._input_names = [e.name for e in fn.head.args]
         self._output_names = [e.name for e in fn.head.ret]
 
