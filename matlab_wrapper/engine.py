@@ -1,6 +1,11 @@
 import os.path
-import matlab_wrapper
 import smop.backend
+
+
+def import_mfile(mFile):
+    buf = open(mFile).read().replace("\r\n", "\n")
+    func_list = smop.parse.parse(buf if buf[-1] == '\n' else buf + '\n', mFile)
+    return func_list
 
 
 class SMOPEngine(object):
@@ -20,7 +25,7 @@ class SMOPEngine(object):
             return invoke
 
         for mFile in (p for p in (os.path.join(path, name + '.m') for path in self.paths) if os.path.isfile(p)):
-            func_list = matlab_wrapper.import_mfile(mFile)
+            func_list = import_mfile(mFile)
             break
         else:
             raise Exception('Could not find {}.m in {}'.format(name, ';'.join(self.paths)))

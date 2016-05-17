@@ -10,12 +10,7 @@ import smop
 import smop.parse
 import smop.backend
 import smop.node
-
-
-def import_mfile(mFile):
-    buf = open(mFile).read().replace("\r\n", "\n")
-    func_list = smop.parse.parse(buf if buf[-1] == '\n' else buf + '\n', mFile)
-    return func_list
+from matlab_wrapper.engine import SMOPEngine, import_mfile
 
 
 class MatlabWrapper(Component):
@@ -48,6 +43,7 @@ class MatlabWrapper(Component):
         fn = [f for f in func_list if type(f) == smop.node.function and f.head.ident.name == self.basename]
         if not fn:
             raise ValueError("Could not find function named '{0}' in file '{1}'".format(self.basename, os.path.basename(self.mFile)))
+        fn = fn[0]
         self._input_names = [e.name for e in fn.head.args]
         self._output_names = [e.name for e in fn.head.ret]
 
@@ -56,8 +52,10 @@ class MatlabWrapper(Component):
         for output in self._output_names:
             self.add_output(output, val=0.0)
 
-        from matlab_wrapper.proxy import get_matlab_engine
+        from matlab_proxy import get_matlab_engine
         self.eng = get_matlab_engine()
+        if self.eng is None:
+            self.eng = SMOPEngine()
         self.eng.addpath(os.path.dirname(os.path.abspath(mFile)), nargout=0)
 
     def __del__(self):

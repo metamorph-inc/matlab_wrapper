@@ -10,6 +10,8 @@
 --extra-index-url https://pypi.python.org/simple
 numpy==1.10.4
 scipy==0.17.0
-smop==0.23-148-g8a425ea
+smop==0.23+g555221c
 six==1.10.0
 openmdao==1.6.0
+
+-e matlab_proxy

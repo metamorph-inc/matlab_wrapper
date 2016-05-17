@@ -1,4 +1,9 @@
+.coverage
+cover/
+*.pyc
 build/
 dist/
 venv/
 venv_64/
+/matlab_wrapper.egg-info/
+/matlab_proxy/matlab_proxy.egg-info/
