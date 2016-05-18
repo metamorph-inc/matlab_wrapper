@@ -32,9 +32,9 @@ class TestMatlabWrapper(unittest.TestCase):
 
 class TestMatlabVersion(unittest.TestCase):
     def test_sort(self):
-        matlab_versions = ['8.4', 'wat', '10.2', None, '9.3', '10.1', '5.4', '5.11', '5.5']
+        matlab_versions = ['8.4', 'wat', '10.2', None, '9.3.2', '9.3', '9.3.1', '10.1', '5.4', '5.11', '5.5']
         matlab_versions.sort(cmp=matlab_proxy.matlab_version_cmp)
-        self.assertEqual([None, 'wat', '5.4', '5.5', '5.11', '8.4', '9.3', '10.1', '10.2'], matlab_versions)
+        self.assertEqual([None, 'wat', '5.4', '5.5', '5.11', '8.4', '9.3', '9.3.1', '9.3.2', '10.1', '10.2'], matlab_versions)
 
     def test_get_preferred_matlab(self):
         # cannot rely on the output, but must not crash

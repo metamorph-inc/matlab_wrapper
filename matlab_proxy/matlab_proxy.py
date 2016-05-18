@@ -165,16 +165,18 @@ def matlab_version_cmp(a, b):
         return 0
     if a is None or b is None:
         return cmp(a, b)
-    a_match = re.match('(\\d+)\\.(\\d+)', a)
-    b_match = re.match('(\\d+)\\.(\\d+)', b)
+    # e.g. R2016a: 9.0
+    # R2015aSP1: 8.5.1
+    a_match = re.match('(\\d+)\\.(\\d+)(?:\\.(\\d+))?', a)
+    b_match = re.match('(\\d+)\\.(\\d+)(?:\\.(\\d+))?', b)
     if a_match is None and b_match is None:
         return cmp(a, b)
     if a_match is None:
         return -1
     if b_match is None:
         return 1
-    return cmp([int(x) for x in a_match.groups()],
-               [int(x) for x in b_match.groups()])
+    return cmp([int(x) for x in a_match.groups(0)],
+               [int(x) for x in b_match.groups(0)])
 
 
 def import_matlab_python_engine(MATLABROOT):
