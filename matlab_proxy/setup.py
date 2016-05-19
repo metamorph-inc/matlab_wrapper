@@ -1,11 +1,12 @@
 from setuptools import setup, find_packages
-import py2exe
 import sys
 import shutil
 import os
 import os.path
 import platform
 
+if sys.argv[1] == 'py2exe':
+    import py2exe
 
 setup(
     name="matlab_proxy",
