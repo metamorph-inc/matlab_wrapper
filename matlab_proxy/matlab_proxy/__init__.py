@@ -220,7 +220,9 @@ if __name__ == '__main__':
         except Exception as e:
             # import traceback
             # traceback.print_exc(100, open('exception{}.txt'.format(method), 'w'))
-            pass
+            # n.b. consumer doesn't have these modules, so create an exception of a different type
+            if type(e).__module__ in ('matlab', 'matlab.engine'):
+                e = ValueError(getattr(e, 'message', getattr(e, 'args', ['unknown MATLAB exception'])[0]))
 
         sys.stdout.write(json.dumps(pickle.dumps(e)) + '\n')
         sys.stdout.write(json.dumps(pickle.dumps(ret)) + '\n')
