@@ -7,3 +7,6 @@ venv/
 venv_64/
 /matlab_wrapper.egg-info/
 /matlab_proxy/matlab_proxy.egg-info/
+/matlab_proxy/MANIFEST.in
+/matlab_proxy/matlab_proxy/dist_64bit/
+/matlab_proxy/matlab_proxy/dist_32bit/
