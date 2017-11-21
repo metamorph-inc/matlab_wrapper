@@ -44,7 +44,11 @@ class EngineProxyServer(object):
                     return list(array)
                 return list((convert_to_list(l, size[1:]) for l in array))
             for output_name in output_names:
-                output = self.engine.workspace[str(output_name)]
+                if sys.version_info[0] == 2:
+                    # FIXME: what encoding is appropriate
+                    output = self.engine.workspace[str(output_name)]
+                else:
+                    output = self.engine.workspace[output_name]
                 if isinstance(output, matlab.mlarray.double):
                     output = convert_to_list(output, output.size)
                 outputs.append(output)
