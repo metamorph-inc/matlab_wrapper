@@ -17,7 +17,7 @@ class EngineProxyServer(object):
     def addpath(self, path):
         self.engine.addpath(path, nargout=0)
 
-    def invoke(self, name, args, nargout):
+    def invoke(self, name, args, nargout, bare, input_names, output_names):
         out = six.StringIO()
         err = six.StringIO()
         args = pickle.loads(args)
@@ -65,7 +65,8 @@ class EngineProxyClient(object):
             args = map(transcode, args)
             kwargs = {k: transcode(v) for k, v in kwargs.iteritems()}
 
-            ret = self.proxy.invoke(name, pickle.dumps(args), kwargs.get('nargout'))
+            ret = self.proxy.invoke(name, pickle.dumps(args), kwargs.get('nargout'), bare=kwargs['bare'],
+                input_names=kwargs['input_names'], output_names=kwargs['output_names'])
             for output in ('stdout', 'stderr'):
                 stdout = kwargs.get(output)
                 if stdout:
@@ -137,7 +138,7 @@ def get_preferred_matlab():
     """Return a 3-tuple (arch, version, MATLABROOT) of the latest MATLAB found in the registry."""
     try:
         import _winreg as winreg
-    except:
+    except ImportError:
         import winreg
 
     def get_latest_matlab(reg_wow64):

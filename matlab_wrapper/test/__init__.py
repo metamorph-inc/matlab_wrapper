@@ -52,7 +52,9 @@ class TestBareMatlabWrapper(unittest.TestCase):
         unknowns = {}
         c.solve_nonlinear({'input1': 2.5, 'input2': 3.5, 'input3': numpy.array([4.5]), 'input4': 'asdf', 'input5': ['asdff', 'asdff']}, unknowns, {})
         # print(repr(unknowns))
-        self.assertEqual(unknowns['m'], 35)
+        self.assertEqual(unknowns['output1'], 5)
+        self.assertTrue(isinstance(unknowns['output3'], numpy.ndarray))
+        self.assertEqual(unknowns['output3'], [9])
 
 
 class TestMatlabVersion(unittest.TestCase):

@@ -4,6 +4,7 @@ from openmdao.api import Component
 import os
 import os.path
 import json
+import re
 import six
 
 import smop
@@ -43,6 +44,7 @@ class MatlabWrapper(Component):
         self.func_list = func_list = import_mfile(mFile)
         fn = [f for f in func_list if type(f) == smop.node.function and f.head.ident.name == self.basename]
         if fn:
+            self.bare = False
             fn = fn[0]
             self._input_names = [e.name for e in fn.head.args]
             self._output_names = [e.name for e in fn.head.ret]
@@ -51,10 +53,10 @@ class MatlabWrapper(Component):
             for output in self._output_names:
                 self.add_output(output, val=0.0)
         else:
-            import re
+            self.bare = True
+            self._input_names = []
+            self._output_names = []
             for line in func_list.toplevel_comments:
-                self._input_names = []
-                self._output_names = []
                 match = re.search(r'\s*variable\s*:\s*(\S+)\s+(\S+)\s+(\S+)(?:\s+([^=]+)="([^"]*)")*', line)
                 if match:
                     name, type_, inout = match.groups()[0:3]
@@ -72,10 +74,15 @@ class MatlabWrapper(Component):
                         if ret is None:
                             raise ValueError('Unknown type \'{}\' for variable \'{}\''.format(type_, name))
                         return ret
+                    pass_by_obj = True
+                    if type_ == 'double':
+                        pass_by_obj = False
                     if inout == 'output':
-                        self.add_output(name, val=map_type(type_, name)(), pass_by_obj=True)
+                        self._output_names.append(name)
+                        self.add_output(name, val=map_type(type_, name)(), pass_by_obj=pass_by_obj)
                     else:
-                        self.add_param(name, val=map_type(type_, name)(), pass_by_obj=True)
+                        self._input_names.append(name)
+                        self.add_param(name, val=map_type(type_, name)(), pass_by_obj=pass_by_obj)
 
                         # raise ValueError("Could not find function named '{0}' in file '{1}'".format(self.basename, os.path.basename(self.mFile)))
 
@@ -117,7 +124,8 @@ class MatlabWrapper(Component):
         out = six.StringIO()
         err = six.StringIO()
 
-        outputs = getattr(self.eng, self.basename)(*args, nargout=len(self._output_names), stdout=out, stderr=err)
+        outputs = getattr(self.eng, self.basename)(*args, nargout=len(self._output_names), bare=self.bare, stdout=out, stderr=err,
+            input_names=self._input_names, output_names=self._output_names)
         if len(self._output_names) == 1 and not isinstance(self.eng, SMOPEngine):
             # MATLAB returns a single float, not an array
             outputs = [outputs]
