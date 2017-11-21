@@ -10,6 +10,7 @@ import smop
 import smop.parse
 import smop.backend
 import smop.node
+import numpy
 from matlab_wrapper.engine import SMOPEngine, import_mfile
 
 
@@ -41,16 +42,42 @@ class MatlabWrapper(Component):
 
         self.func_list = func_list = import_mfile(mFile)
         fn = [f for f in func_list if type(f) == smop.node.function and f.head.ident.name == self.basename]
-        if not fn:
-            raise ValueError("Could not find function named '{0}' in file '{1}'".format(self.basename, os.path.basename(self.mFile)))
-        fn = fn[0]
-        self._input_names = [e.name for e in fn.head.args]
-        self._output_names = [e.name for e in fn.head.ret]
+        if fn:
+            fn = fn[0]
+            self._input_names = [e.name for e in fn.head.args]
+            self._output_names = [e.name for e in fn.head.ret]
+            for input in self._input_names:
+                self.add_param(input, val=0.0)
+            for output in self._output_names:
+                self.add_output(output, val=0.0)
+        else:
+            import re
+            for line in func_list.toplevel_comments:
+                self._input_names = []
+                self._output_names = []
+                match = re.search(r'\s*variable\s*:\s*(\S+)\s+(\S+)\s+(\S+)(?:\s+([^=]+)="([^"]*)")*', line)
+                if match:
+                    name, type_, inout = match.groups()[0:3]
+                    args = dict(zip(match.groups()[3::2], match.groups()[4::2]))
+                    # if 'matlabName' in args:
+                    #    raise NotImplementedError(name)
 
-        for input in self._input_names:
-            self.add_param(input, val=0.0)
-        for output in self._output_names:
-            self.add_output(output, val=0.0)
+                    def map_type(type_, name):
+                        ret = {'object': dict,
+                                'double': float,
+                                'double[]': lambda: numpy.zeros(shape=(1, 1)),
+                                'string': six.text_type,
+                                'string[]': list,
+                                }.get(type_)
+                        if ret is None:
+                            raise ValueError('Unknown type \'{}\' for variable \'{}\''.format(type_, name))
+                        return ret
+                    if inout == 'output':
+                        self.add_output(name, val=map_type(type_, name)(), pass_by_obj=True)
+                    else:
+                        self.add_param(name, val=map_type(type_, name)(), pass_by_obj=True)
+
+                        # raise ValueError("Could not find function named '{0}' in file '{1}'".format(self.basename, os.path.basename(self.mFile)))
 
         if start_engine:
             from matlab_proxy import get_matlab_engine
