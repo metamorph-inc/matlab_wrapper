@@ -9,6 +9,8 @@ import platform
 import warnings
 import subprocess
 
+from base64 import b64encode, b64decode
+
 
 class EngineProxyServer(object):
     def __init__(self, engine):
@@ -34,7 +36,7 @@ class EngineProxyServer(object):
                         pass
                     else:
                         arg = matlab.double(arg)
-                self.engine.workspace[input_name] = arg
+                self.engine.workspace[input_name.encode('ascii', 'ignore')] = arg
 
             getattr(self.engine, name)(nargout=nargout, stdout=out, stderr=err)
             outputs = []
@@ -146,8 +148,12 @@ def get_engine_proxy(MATLABROOT, python_exe):
         worker.stdin.write(method + '\n')
         worker.stdin.write(json.dumps(args) + '\n')
         worker.stdin.write(json.dumps(kwargs) + '\n')
-        e = pickle.loads(json.loads(worker.stdout.readline().rstrip('\n')))
-        ret = pickle.loads(json.loads(worker.stdout.readline().rstrip('\n')))
+        e_str = worker.stdout.readline().rstrip('\n')
+        # print >> sys.stderr, "XXX:", e_str, "---", len(e_str)
+        e = pickle.loads(b64decode(json.loads(e_str)))
+        ret_str = worker.stdout.readline().rstrip('\n')
+        # print >> sys.stderr, "YYY:", ret_str, "---", len(ret_str)
+        ret = pickle.loads(b64decode(json.loads(ret_str)))
         if e:
             raise e
         return ret
@@ -269,15 +275,15 @@ if __name__ == '__main__':
         try:
             ret = getattr(engine, method)(*args, **kwargs)
         except Exception as e:
-            # import traceback
-            # traceback.print_exc(100, open('exception{}.txt'.format(method), 'w'))
+            import traceback
+            traceback.print_exc(100, open('exception{}.txt'.format(method), 'w'))
             # n.b. consumer doesn't have these modules, so create an exception of a different type
             if type(e).__module__ in ('matlab', 'matlab.engine'):
                 e = ValueError(getattr(e, 'message', getattr(e, 'args', ['unknown MATLAB exception'])[0]))
 
-        sys.stdout.write(json.dumps(pickle.dumps(e)) + '\n')
+        sys.stdout.write(json.dumps(b64encode(pickle.dumps(e))) + '\n')
         # open('exception{}.txt'.format(method), 'w').write(pickle.dumps(ret))
-        sys.stdout.write(json.dumps(pickle.dumps(ret)) + '\n')
+        sys.stdout.write(json.dumps(b64encode(pickle.dumps(ret))) + '\n')
         sys.stdout.flush()
         if method == 'quit':
             break
