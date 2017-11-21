@@ -42,19 +42,19 @@ class TestBareMatlabWrapper(unittest.TestCase):
                 return repr(obj)
             raise TypeError(repr(obj) + " is not JSON serializable")
 
-        import json
-        print(json.dumps({'params': c._init_params_dict, 'unknowns': c._init_unknowns_dict}, default=default))
+        # import json
+        # print(json.dumps({'params': c._init_params_dict, 'unknowns': c._init_unknowns_dict}, default=default))
         self.assertIn('input1', c._init_params_dict)
         self.assertIn('output2', c._init_unknowns_dict)
 
     def test_values(self):
         c = MatlabWrapper(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bare_file.m'))
         unknowns = {}
-        c.solve_nonlinear({'input1': 2.5, 'input2': 3.5, 'input3': numpy.array([4.5]), 'input4': 'asdf', 'input5': ['asdff', 'asdff']}, unknowns, {})
+        c.solve_nonlinear({'input1': 2.5, 'input2': 3.5, 'input3': numpy.array([4.5, 9]), 'input4': 'asdf', 'input5': ['asdff', 'asdff']}, unknowns, {})
         # print(repr(unknowns))
         self.assertEqual(unknowns['output1'], 5)
-        self.assertTrue(isinstance(unknowns['output3'], numpy.ndarray))
-        self.assertEqual(unknowns['output3'], [9])
+        self.assertEqual(numpy.ndarray, type(unknowns['output3']))
+        self.assertEqual(unknowns['output3'].tolist(), [9, 18])
 
 
 class TestMatlabVersion(unittest.TestCase):

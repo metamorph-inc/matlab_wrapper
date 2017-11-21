@@ -119,7 +119,10 @@ class MatlabWrapper(Component):
 
         def set_unknowns(outputs):
             for i, name in enumerate(self._output_names):
-                unknowns[name] = outputs[i]
+                output = outputs[i]
+                if isinstance(output, list) and isinstance(self._init_unknowns_dict[name]['val'], numpy.ndarray):
+                    output = numpy.array(output)
+                unknowns[name] = output
 
         out = six.StringIO()
         err = six.StringIO()

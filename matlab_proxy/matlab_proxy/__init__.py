@@ -18,10 +18,39 @@ class EngineProxyServer(object):
         self.engine.addpath(path, nargout=0)
 
     def invoke(self, name, args, nargout, bare, input_names, output_names):
+        import matlab
+        import matlab.engine
+        import matlab.mlarray
         out = six.StringIO()
         err = six.StringIO()
         args = pickle.loads(args)
-        outputs = getattr(self.engine, name)(*args, nargout=nargout, stdout=out, stderr=err)
+        if bare:
+            nargout = 0
+            for i, input_name in enumerate(input_names):
+                arg = args[i]
+
+                if isinstance(args[i], list):
+                    if len(arg) and isinstance(arg[0], six.string_types):
+                        pass
+                    else:
+                        arg = matlab.double(arg)
+                self.engine.workspace[input_name] = arg
+
+            getattr(self.engine, name)(nargout=nargout, stdout=out, stderr=err)
+            outputs = []
+
+            def convert_to_list(array, size):
+                if len(size) == 1:
+                    return list(array)
+                return list((convert_to_list(l, size[1:]) for l in array))
+            for output_name in output_names:
+                output = self.engine.workspace[str(output_name)]
+                if isinstance(output, matlab.mlarray.double):
+                    output = convert_to_list(output, output.size)
+                outputs.append(output)
+            # open('debug.txt', 'a').write(repr(outputs) + '\n')
+        else:
+            outputs = getattr(self.engine, name)(*args, nargout=nargout, stdout=out, stderr=err)
 
         return {"output": pickle.dumps(outputs), "stdout": out.getvalue(), "stderr": err.getvalue()}
 

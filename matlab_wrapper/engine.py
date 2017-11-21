@@ -48,7 +48,6 @@ class SMOPEngine(object):
             eval(code, mod, mod)
             if kwargs['bare']:
                 ret = []
-                print repr(kwargs['output_names'])
                 for i, output_name in enumerate(kwargs['output_names']):
                     # FIXME
                     ret.append(mod[output_name])
