@@ -25,7 +25,7 @@ class EngineProxyServer(object):
         import matlab.mlarray
         out = six.StringIO()
         err = six.StringIO()
-        args = pickle.loads(args)
+        args = pickle.loads(b64decode(args))
         if bare:
             nargout = 0
             for i, input_name in enumerate(input_names):
@@ -36,6 +36,7 @@ class EngineProxyServer(object):
                         pass
                     else:
                         arg = matlab.double(arg)
+                # FIXME what is the proper encoding
                 self.engine.workspace[input_name.encode('ascii', 'ignore')] = arg
 
             getattr(self.engine, name)(nargout=nargout, stdout=out, stderr=err)
@@ -100,7 +101,8 @@ class EngineProxyClient(object):
             args = map(transcode, args)
             kwargs = {k: transcode(v) for k, v in kwargs.iteritems()}
 
-            ret = self.proxy.invoke(name, pickle.dumps(args), kwargs.get('nargout'), bare=kwargs['bare'],
+            # need to pickle here in case args contains type information lost during json transform (eg. int vs float)
+            ret = self.proxy.invoke(name, b64encode(pickle.dumps(args)), kwargs.get('nargout'), bare=kwargs['bare'],
                 input_names=kwargs['input_names'], output_names=kwargs['output_names'])
             for output in ('stdout', 'stderr'):
                 stdout = kwargs.get(output)
@@ -146,8 +148,9 @@ def get_engine_proxy(MATLABROOT, python_exe):
 
     def dispatch(method, *args, **kwargs):
         worker.stdin.write(method + '\n')
-        worker.stdin.write(json.dumps(args) + '\n')
-        worker.stdin.write(json.dumps(kwargs) + '\n')
+        # print >> sys.stderr, "AAArgs:", args
+        worker.stdin.write(json.dumps(args, ensure_ascii=False) + '\n')
+        worker.stdin.write(json.dumps(kwargs, ensure_ascii=False) + '\n')
         e_str = worker.stdout.readline().rstrip('\n')
         # print >> sys.stderr, "XXX:", e_str, "---", len(e_str)
         e = pickle.loads(b64decode(json.loads(e_str)))
