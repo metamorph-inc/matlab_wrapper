@@ -36,8 +36,18 @@ class EngineProxyServer(object):
                         pass
                     else:
                         arg = matlab.double(arg)
-                # FIXME what is the proper encoding
-                self.engine.workspace[input_name.encode('ascii', 'ignore')] = arg
+
+                try:
+                    # FIXME what is the proper encoding
+                    self.engine.workspace[input_name.encode('ascii', 'ignore')] = arg
+                except ValueError as e:
+                    if e.message == 'invalid field for MATLAB struct':
+                        for name in arg:
+                            if not re.match('^[a-zA-Z][a-zA-Z0-9_]{0,62}$', name):
+                                raise ValueError('invalid field for MATLAB struct "{0}". '.format(name) +
+                                    'MATLAB fields must start with a letter and contain only letters, numbers, and underscores. ' +
+                                    'MATLAB fields must contain 63 characters or fewer.')
+                    raise
 
             getattr(self.engine, name)(nargout=nargout, stdout=out, stderr=err)
             outputs = []
