@@ -31,6 +31,14 @@ class TestMatlabWrapper(unittest.TestCase):
         self.assertEqual(unknowns['w']['m'], unknowns['m'])
         self.assertEqual(unknowns['strarra'], ['Mercury', 'Venus', 'Earth'])
 
+    def test_single_output(self):
+        c = MatlabWrapper(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'single_value.m'))
+        unknowns = {}
+        c.solve_nonlinear({'x': numpy.float64(2), 'y': numpy.float64(5)}, unknowns, {})
+        print(repr(unknowns))
+
+        self.assertEqual(unknowns['z'], 7)
+
 
 class TestBareMatlabWrapper(unittest.TestCase):
 
