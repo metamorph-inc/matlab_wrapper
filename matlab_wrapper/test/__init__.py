@@ -22,6 +22,7 @@ class TestMatlabWrapper(unittest.TestCase):
         self.assertIn('a', c._init_params_dict)
         self.assertIn('m', c._init_unknowns_dict)
 
+    @unittest.skipUnless(matlab_proxy.get_preferred_matlab(), "Fails with PythonEngine")
     def test_values(self):
         c = MatlabWrapper(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'stat2.m'))
         unknowns = {}
@@ -57,6 +58,7 @@ class TestBareMatlabWrapper(unittest.TestCase):
         self.assertIn('input1', c._init_params_dict)
         self.assertIn('output2', c._init_unknowns_dict)
 
+    @unittest.skipUnless(matlab_proxy.get_preferred_matlab(), "Fails with PythonEngine")
     def test_values(self):
         c = MatlabWrapper(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bare_file.m'))
         unknowns = {}
@@ -64,7 +66,7 @@ class TestBareMatlabWrapper(unittest.TestCase):
         # print(repr(unknowns))
         self.assertEqual(unknowns['output1'], 5)
         self.assertEqual(numpy.ndarray, type(unknowns['output3']))
-        self.assertEqual(unknowns['output3'].tolist(), [[9, 18]]) # TODO: Do we want to reshape 1xn arrays to be 1-dimensional?
+        self.assertEqual(unknowns['output3'].tolist(), [[9, 18]])  # TODO: Do we want to reshape 1xn arrays to be 1-dimensional?
         self.assertEqual(unknowns['output4'], 'asdf')
         self.assertEqual(unknowns['output5'], ['asdffa', 'asdff'])
         self.assertEqual(unknowns['output6']['x'], 4)
