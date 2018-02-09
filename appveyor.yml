@@ -10,12 +10,12 @@ install:
 build_script:
 #  - '.\venv\Scripts\python setup.py build_ext --inplace'
   - '.\venv\Scripts\python setup.py bdist_wheel'
+after_build:
+  - ps: Get-ChildItem dist\* | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
 test_script:
   - '.\venv\Scripts\nosetests'
 #  nosetests.exe --with-coverage --cover-html --traverse-namespace --cover-branches --cover-erase --cover-tests
 #  coverage html -d cover
-artifacts:
-  - path: 'dist\*.whl'
 #deploy:
 #  - provider: GitHub
 #    artifact: 'dist\*.whl'
