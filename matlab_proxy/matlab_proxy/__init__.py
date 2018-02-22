@@ -31,7 +31,7 @@ class MatlabInProcessProxyReplacement(object):
                 if numpy and isinstance(val, numpy.ndarray):
                     return val.tolist()
                 if numpy and isinstance(val, (numpy.float16, numpy.float32, numpy.float64)):
-                    return matlab.double(float(val))
+                    return float(val)
                 return val
             args = [transcode(val) for val in args]
 
