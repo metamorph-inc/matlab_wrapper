@@ -71,6 +71,15 @@ class TestBareMatlabWrapper(unittest.TestCase):
         self.assertEqual(unknowns['output5'], ['asdffa', 'asdff'])
         self.assertEqual(unknowns['output6']['x'], 4)
 
+    def test_values_simple(self):
+        c = MatlabWrapper(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bare_file_simple.m'))
+        unknowns = {}
+        c.solve_nonlinear({'input1': 2.5, 'input2': 3.5, 'input3': 4, 'input4': 'asdf', 'input6': 3}, unknowns, {})
+        # print(repr(unknowns))
+        self.assertEqual(unknowns['output1'], 5)
+        self.assertEqual(unknowns['output3'], 8)
+        self.assertEqual(unknowns['output4'], 'asdf')
+        self.assertEqual(unknowns['output6'], 2)
 
 class TestMatlabVersion(unittest.TestCase):
     def test_sort(self):

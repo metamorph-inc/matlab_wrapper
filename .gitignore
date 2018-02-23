@@ -10,3 +10,7 @@ venv_64/
 /matlab_proxy/MANIFEST.in
 /matlab_proxy/matlab_proxy/dist_64bit/
 /matlab_proxy/matlab_proxy/dist_32bit/
+bare_file.py
+bare_file_simple.py
+single_value.py
+stat2.py
