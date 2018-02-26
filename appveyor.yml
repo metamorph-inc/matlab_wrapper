@@ -16,6 +16,8 @@ build_script:
   - '.\venv\Scripts\pip install -r requirements.txt'
   - '.\venv\Scripts\python setup.py py2exe'
   - '.\venv\Scripts\python setup.py bdist_wheel -p win32'
+  - 'rd /s/q build'
+  - '.\venv\Scripts\python setup.py bdist_wheel'
   - 'cd ..'
   
 after_build:
