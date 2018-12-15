@@ -323,13 +323,22 @@ def matlab_version_cmp(a, b):
 def import_matlab_python_engine(MATLABROOT):
     win_bit = {'32bit': 'win32',
             '64bit': 'win64'}[platform.architecture()[0]]
-    os.environ['PATH'] += r';{}\bin\{}'.format(MATLABROOT, win_bit)
-    sys.path.insert(0, r"{}\extern\engines\python\dist\matlab\engine\{}".format(MATLABROOT, win_bit))
-    sys.path.insert(1, r"{}\extern\engines\python\dist".format(MATLABROOT))
-    import importlib
-    importlib.import_module('matlabengineforpython{}'.format('_'.join(map(str, sys.version_info[0:2]))))
-    from matlab import engine
-    return engine
+    old_path = os.environ['PATH']
+    os.environ['PATH'] = r'{}\bin\{}'.format(MATLABROOT, win_bit) + os.pathsep + os.environ['PATH']
+    # numpy modifies PATH to add tbb.dll et al. But its tbb.dll is incompatible with MATLAB's
+    # os.environ['PATH'] = os.pathsep.join(p for p in os.environ['PATH'].split(os.pathsep) if 'numpy' not in p)
+    try:
+        sys.path.insert(0, r"{}\extern\engines\python\dist\matlab\engine\{}".format(MATLABROOT, win_bit))
+        sys.path.insert(1, r"{}\extern\engines\python\dist".format(MATLABROOT))
+        try:
+            import importlib
+            importlib.import_module('matlabengineforpython{}'.format('_'.join(map(str, sys.version_info[0:2]))))
+            from matlab import engine
+            return engine
+        finally:
+            del sys.path[:2]
+    finally:
+        os.environ['PATH'] = old_path
 
 HANDSHAKE_MAGIC = 'matlab_\bproxy'
 
