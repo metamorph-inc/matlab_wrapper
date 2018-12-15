@@ -12,6 +12,6 @@ numpy==1.13.1
 scipy==0.17.0
 smop==0.23+gbf9aebe
 six==1.10.0
-openmdao==1.7.3
+openmdao==1.*
 
 -e matlab_proxy
