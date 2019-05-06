@@ -96,7 +96,10 @@ class MatlabWrapper(Component):
                 output = outputs[i]
                 if isinstance(output, list) and isinstance(self._init_unknowns_dict[name]['val'], numpy.ndarray):
                     output = numpy.array(output)
-                unknowns[name] = output
+                try:
+                    unknowns[name] = output
+                except ValueError as e:
+                    six.reraise(ValueError, ValueError('Could not set output {}.{}: {}'.format(self.name, name, e.message)))
 
         out = six.StringIO()
         err = six.StringIO()

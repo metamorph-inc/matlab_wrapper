@@ -6,8 +6,8 @@ comment
 %}
 function [m,s,w,strarra] = stat2(a, b, c)
 m = a * b * c
-s = a ^ b
-w = struct('m', m, 's', s)
+s = [a b c]
+w = struct('m', m, 's', 's')
 strarra = {'Mercury', 'Venus', 'Earth'}
 end
 
