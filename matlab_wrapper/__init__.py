@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from openmdao.api import Component
+from openmdao.api import Component, AnalysisError
 import os
 import os.path
 import json
@@ -104,8 +104,12 @@ class MatlabWrapper(Component):
         out = six.StringIO()
         err = six.StringIO()
 
-        outputs = getattr(self.eng, self.basename)(args, nargout=len(self._output_names), bare=self.bare, stdout=out, stderr=err,
-            input_names=self._input_names, output_names=self._output_names)
+        try:
+            outputs = getattr(self.eng, self.basename)(args, nargout=len(self._output_names), bare=self.bare, stdout=out, stderr=err,
+                input_names=self._input_names, output_names=self._output_names)
+        except AnalysisError as e:
+            print('Error in {}: {}'.format(self.name, e.message))
+            raise
         # isinstance(numpy.float64(), float) => True
         if len(self._output_names) == 1 and isinstance(outputs, float):
             # MATLAB returns a single float, not an 1x1 float array
