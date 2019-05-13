@@ -24,14 +24,12 @@ There are a few restrictions in the current implementation:
 
 Below is a *Function File* example of a MATLAB Wrapper script:
 
-.. code-block:: matlab
-   :caption: Example.m
-   :name: Example.m
+:: 
 
-   function [sum, product] = Example(x, y, z)
-   sum = x + y + z
-   product = x * y * z
-   end
+  function [sum, product] = Example(x, y, z)
+  sum = x + y + z
+  product = x * y * z
+  end
 
 
 Bare Files
@@ -45,23 +43,21 @@ and outputs.
 Below is a *Bare File* example of a script that doubles a number
 of different types of inputs:
 
-.. code-block:: matlab
-   :caption: Double.m
-   :name: Double.m
+::
 
-   % variable: output1 double output
-   % variable: output2 double[] output
-   % variable: output3 string output
-   % variable: output4 string[] output
-   % variable: input1 double input
-   % variable: input2 double[] input
-   % variable: input3 string input
-   % variable: input4 string[] input
+  % variable: output1 double output
+  % variable: output2 double[] output
+  % variable: output3 string output
+  % variable: output4 string[] output
+  % variable: input1 double input
+  % variable: input2 double[] input
+  % variable: input3 string input
+  % variable: input4 string[] input
 
-   output1 = input1 * 2
-   output2 = input2 * 2
-   output3 = strcat(input3, input3)
-   output4 = [input4, input4]
+  output1 = input1 * 2
+  output2 = input2 * 2
+  output3 = strcat(input3, input3)
+  output4 = [input4, input4]
 
 You cannot define functions in a *Bare File* style MATLAB integration file;
 however, you can call other function files that you have defined.
