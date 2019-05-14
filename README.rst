@@ -66,10 +66,9 @@ however, you can call other function files that you have defined.
 MATLAB Data Type Conversion
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-OpenMETA uses the Python `OpenMDAO <http://www.openmdao.org/>`_
-framework to execute PETs. Since the data passed between analysis
-blocks is managed by Python, the table below describes the conversions
-that occur when data is passed into or out of a MATLAB Wrapper block.
+Since the data passed between Components is managed by Python, 
+the table below describes the conversions
+that occur when data is passed into or out of a MATLAB Wrapper Component.
 
 =========================  ======================  =========================
 Python                     to MATLAB               to Python
@@ -89,17 +88,16 @@ List of Unicodes           Cell Array of Unicodes  List of Unicodes
 Dictionary                 Struct                  Dictionary [4]_
 =========================  ======================  =========================
 
-.. [1] These types are not allowed to be passed into MATLAB Wrapper analysis
-   blocks.
+.. [1] These types are not allowed to be passed into MATLAB Wrapper Components.
 
 .. [2] Integers in an array will be converted to floats upon passing through
-   a MATLAB Wrapper analysis block.
+   a MATLAB Wrapper Components.
 
 .. [3] All doubles in MATLAB are essentially a one-by-one array
    (1x1), so the framework automatically unwraps all one-by-one arrays to
-   a single float value as they are passed to the next analysis block.
+   a single float value as they are passed to the next analysis Component.
    E.g. A 1x1 Numpy Array will become a double in MATLAB and will result in a
-   double in OpenMDAO when it is passed to the next analysis block.
+   double in OpenMDAO when it is passed to the next analysis Component.
 
 .. [4] Structs in MATLAB can only accept fieldnames that meet the following
    three criteria:
@@ -110,10 +108,4 @@ Dictionary                 Struct                  Dictionary [4]_
 
    Although Python can handle arbitrary strings as the keys in dictionaries,
    you must meet these criteria if you are going to pass the dictionaries
-   to a MATLAB Wrapper block.
-
-For examples of the conversion see the "MatlabConversions" PET in the
-`Analysis Blocks <https://github.com/metamorph-inc/openmeta-examples-and-templates/tree/master/analysis-blocks>`_
-project in the
-`OpenMETA Examples And Templates <https://github.com/metamorph-inc/openmeta-examples-and-templates>`_
-repository.
+   to a MATLAB Wrapper Component.
