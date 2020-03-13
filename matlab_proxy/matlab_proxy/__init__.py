@@ -310,7 +310,7 @@ def get_preferred_matlab():
     m32 = get_latest_matlab(winreg.KEY_WOW64_32KEY)
     if m64 is None and m32 is None:
         return None
-    if matlab_version_cmp(m64, m32) == 1 or (matlab_version_cmp(m64, m32) == 0 and platform.architecture()[0] == '64bit'):
+    if matlab_version_cmp(m64[0], m32[0]) == 1 or (matlab_version_cmp(m64[0], m32[0]) == 0 and platform.architecture()[0] == '64bit'):
         return ('64bit',) + m64
     else:
         return ('32bit',) + m32
