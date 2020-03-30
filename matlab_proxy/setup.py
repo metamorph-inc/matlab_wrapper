@@ -25,7 +25,7 @@ with open('MANIFEST.in', 'wb') as manifest:
 
 setup(
     name="matlab_proxy",
-    version="0.6",
+    version="0.7",
     packages=['matlab_proxy'],
     include_package_data=True,
     zip_safe=False,
