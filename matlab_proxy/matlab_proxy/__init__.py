@@ -303,7 +303,7 @@ def get_preferred_matlab():
         except WindowsError as e:
             if e.winerror != 2:
                 raise
-            return None
+            return (None, None)
         with matlab:
             matlab_versions = []
             try:
