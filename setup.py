@@ -3,6 +3,8 @@ setup(
     name="matlab_wrapper",
     version="0.10",
     packages=find_packages(),
-    # FIXME do we need openmdao>=1.5.0,<2.0.0
-    install_requires=["openmdao==1.*", "smop>=0.23", "six>=1.10.0"]
+    install_requires=["openmdao>=1.5,<2", "smop>=0.23", "six>=1.10.0"],
+    project_urls={
+        'Source': 'https://github.com/metamorph-inc/matlab_wrapper',
+    },
 )
