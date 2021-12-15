@@ -8,10 +8,14 @@
 
 --index-url https://pypi.metamorphsoftware.com/
 --extra-index-url https://pypi.python.org/simple
-numpy==1.13.1
-scipy==0.17.0
-smop==0.23+gbf9aebe
-six==1.10.0
+numpy
+scipy
+smop==0.23+gade5e30
+six~=1.10.0
 openmdao==1.*
 
 -e matlab_proxy
+
+
+# networkx==2.6.3
+# openmdao 1.7.4 requires networkx==1.11, but you have networkx 2.6.3 which is incompatible.

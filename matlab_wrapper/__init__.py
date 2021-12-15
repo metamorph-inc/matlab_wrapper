@@ -15,6 +15,7 @@ import smop.backend
 import smop.node
 import numpy
 from matlab_wrapper.engine import SMOPEngine, import_mfile
+from six.moves import zip
 
 
 class MatlabWrapper(Component):
@@ -48,7 +49,7 @@ class MatlabWrapper(Component):
                 match = re.search(r'\s*variable\s*:\s*(\S+)\s+(\S+)\s+(\S+)(?:\s+([^=]+)="([^"]*)")*', line)
                 if match:
                     name, type_, inout = match.groups()[0:3]
-                    args = dict(zip(match.groups()[3::2], match.groups()[4::2]))
+                    args = dict(list(zip(match.groups()[3::2], match.groups()[4::2])))
 
                     def map_type(type_, name):
                         ret = {'object': dict,

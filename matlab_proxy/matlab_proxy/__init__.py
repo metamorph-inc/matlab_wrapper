@@ -234,7 +234,7 @@ class EngineProxyClient(object):
 
         def invoke(args, **kwargs):
             # (*args, nargout=len(self._output_names), stdout=out, stderr=err)
-            args = map(transcode, args)
+            args = list(map(transcode, args))
             kwargs = {k: transcode(v) for k, v in six.iteritems(kwargs)}
             
             # need to pickle here in case args contains type information lost during json transform (eg. int vs float)
@@ -348,10 +348,7 @@ def get_engine_proxy(MATLABROOT, python_exe, target_architecture):
 
 def get_preferred_matlab():
     """Return a 3-tuple (arch, version, MATLABROOT) of the latest MATLAB found in the registry."""
-    try:
-        import _winreg as winreg
-    except ImportError:
-        import winreg
+    import six.moves.winreg as winreg
 
     def get_latest_matlab(reg_wow64):
         try:

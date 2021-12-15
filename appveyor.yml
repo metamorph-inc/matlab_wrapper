@@ -1,7 +1,11 @@
 environment:
   matrix:
     - PYTHON: "C:\\Python27"
+      PYTHON_x64: "C:\\Python27-x64"
     - PYTHON: "C:\\Python27-x64"
+      PYTHON_x64: "C:\\Python27-x64"
+    - PYTHON: "C:\\Python39"
+      PYTHON_x64: "C:\\Python39-x64"
 cache:
   - '%LOCALAPPDATA%\pip\cache -> requirements.txt'
 install:
@@ -12,7 +16,7 @@ build_script:
   - '.\venv\Scripts\python setup.py bdist_wheel'
 
   - 'cd matlab_proxy'
-  - 'C:\Python27-x64\python -m virtualenv venv'
+  - '%PYTHON_x64%\python -m virtualenv venv'
   - '.\venv\Scripts\pip install -r requirements.txt'
   - '.\venv\Scripts\python setup.py py2exe'
   - '.\venv\Scripts\python setup.py bdist_wheel -p win32'

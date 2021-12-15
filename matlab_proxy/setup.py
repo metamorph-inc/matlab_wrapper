@@ -17,7 +17,7 @@ import platform
 if sys.argv[1] == 'py2exe':
     import py2exe
 
-with open('MANIFEST.in', 'wb') as manifest:
+with open('MANIFEST.in', 'w') as manifest:
     if 'bdist_wheel' in sys.argv and 'win32' in sys.argv:
         manifest.write('recursive-include matlab_proxy/dist_{} *\n'.format(platform.architecture()[0]))
     else:
