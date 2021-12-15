@@ -116,7 +116,7 @@ class EngineProxyServer(object):
                 else:
                     return matlab.double(arg)
             elif isinstance(arg, dict):
-                for k, v in arg.iteritems():
+                for k, v in six.iteritems(arg):
                     arg[k] = convert_arg_to_matlab_datatype(v)
                 return arg
             else:
@@ -135,7 +135,7 @@ class EngineProxyServer(object):
             if not isinstance(d, dict):
                 return convert_to_list(d)
             else: # dict
-                for k,v in d.iteritems():
+                for k,v in six.iteritems(d):
                     d[k] = convert_dictionary_contents_to_list(v)
                 return d
 
@@ -235,7 +235,7 @@ class EngineProxyClient(object):
         def invoke(args, **kwargs):
             # (*args, nargout=len(self._output_names), stdout=out, stderr=err)
             args = map(transcode, args)
-            kwargs = {k: transcode(v) for k, v in kwargs.iteritems()}
+            kwargs = {k: transcode(v) for k, v in six.iteritems(kwargs)}
             
             # need to pickle here in case args contains type information lost during json transform (eg. int vs float)
             try:
