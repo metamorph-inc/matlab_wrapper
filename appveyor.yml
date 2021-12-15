@@ -34,7 +34,7 @@ deploy:
     draft: false
     prerelease: false
     auth_token:
-      secure: kPRSiz5pgGYGhAbQnLNWsYjAO6fD2Uds4ixzSH6RAiXZ5eM/Tqrg8L7FjtaLe6wU
+      secure: 6Eoe7p9mqStkqanseUsqMedSW6iSeR58OIaqbmDGAnsitnL5gstRs2MqBwjFKBUq
     on:
       appveyor_repo_tag: true
   - provider: S3
