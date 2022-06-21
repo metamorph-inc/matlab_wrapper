@@ -8,7 +8,7 @@
 
 --index-url https://pypi.metamorphsoftware.com/
 --extra-index-url https://pypi.python.org/simple
-numpy==1.13.1
+numpy==1.22.0
 scipy==0.17.0
 smop==0.23+gbf9aebe
 six==1.10.0
