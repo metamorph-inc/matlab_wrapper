@@ -1,5 +1,14 @@
 from __future__ import absolute_import
 from __future__ import print_function
+import sys
+import collections, collections.abc
+if sys.version_info >= (3, 10):
+    collections.Iterable = collections.abc.Iterable  # openmdao==1.7.4 doesn't know about this rename
+if sys.version_info >= (3, 9):
+    import math
+    import fractions
+    fractions.gcd = math.gcd  # networkx==1.11 doesn't know about this rename
+
 from openmdao.api import Component, AnalysisError
 import os
 import os.path
@@ -7,7 +16,6 @@ import json
 import re
 import six
 import difflib
-import sys
 
 import smop
 import smop.parse

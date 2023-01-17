@@ -33,7 +33,7 @@ setup(
                         # 'xref': True,
                         # 'unbuffered': True,
                         "dll_excludes": ['w9xpopen.exe'],
-                        "excludes": """Tkinter _tkinter matlab matlab.engine site
+                        "excludes": """Tkinter tkinter _tkinter tcl tk Tkconstants matlab matlab.engine site doctest
                             _ctypes _hashlib _socket _ssl bz2 pyexpat select""".split(),
                         "includes": ["pkgutil", "importlib"],
                         "dist_dir": 'matlab_proxy/dist_' + platform.architecture()[0]

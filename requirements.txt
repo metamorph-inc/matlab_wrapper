@@ -8,9 +8,11 @@
 
 --index-url https://pypi.metamorphsoftware.com/
 --extra-index-url https://pypi.python.org/simple
-numpy
-scipy
-smop==0.23+gade5e30
+numpy==1.22.4; sys_platform == 'win32'
+numpy; sys_platform != 'win32'
+scipy==1.8.1; sys_platform == 'win32'
+scipy; sys_platform != 'win32'
+smop==0.23+g9bf6295
 six~=1.10.0
 openmdao==1.*
 

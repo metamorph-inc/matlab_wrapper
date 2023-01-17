@@ -11,6 +11,7 @@ import subprocess
 from contextlib import contextmanager
 
 from base64 import b64encode, b64decode
+from functools import total_ordering
 
 
 class AnalysisError(Exception):
@@ -356,18 +357,18 @@ def get_preferred_matlab():
         except WindowsError as e:
             if e.winerror != 2:
                 raise
-            return (None, None)
+            return (MatlabVersion(None), None)
         with matlab:
             matlab_versions = []
             try:
                 for i in six.moves.range(1000):
-                    matlab_versions.append(winreg.EnumKey(matlab, i))
+                    matlab_versions.append(MatlabVersion(winreg.EnumKey(matlab, i)))
             except WindowsError as e:
                 if e.winerror != 259:
                     raise
-            matlab_versions.sort(cmp=lambda a, b: -matlab_version_cmp(a, b))
+            matlab_versions.sort()
             for matlab_version in matlab_versions:
-                with winreg.OpenKey(matlab, matlab_version, 0, winreg.KEY_READ | reg_wow64) as matlab_version_key:
+                with winreg.OpenKey(matlab, matlab_version.version, 0, winreg.KEY_READ | reg_wow64) as matlab_version_key:
                     try:
                         value, type_ = winreg.QueryValueEx(matlab_version_key, 'MATLABROOT')
                     except WindowsError as e:
@@ -379,31 +380,44 @@ def get_preferred_matlab():
 
     m64 = get_latest_matlab(winreg.KEY_WOW64_64KEY)
     m32 = get_latest_matlab(winreg.KEY_WOW64_32KEY)
-    if m64[0] is None and m32[0] is None:
+    if m64[0].version is None and m32[0].version is None:
         return None
-    if matlab_version_cmp(m64[0], m32[0]) == 1 or (matlab_version_cmp(m64[0], m32[0]) == 0 and platform.architecture()[0] == '64bit'):
-        return ('64bit',) + m64
+    if m32[0].version is None or m64[0] > m32[0] or (m64[0] == m32[0] and platform.architecture()[0] == '64bit'):
+        return ('64bit', m64[0].version, m64[1])
     else:
-        return ('32bit',) + m32
+        return ('32bit', m32[0].version, m32[1])
 
 
-def matlab_version_cmp(a, b):
-    if a is None and b is None:
-        return 0
-    if a is None or b is None:
-        return cmp(a, b)
-    # e.g. R2016a: 9.0
-    # R2015aSP1: 8.5.1
-    a_match = re.match('(\\d+)\\.(\\d+)(?:\\.(\\d+))?', a)
-    b_match = re.match('(\\d+)\\.(\\d+)(?:\\.(\\d+))?', b)
-    if a_match is None and b_match is None:
-        return cmp(a, b)
-    if a_match is None:
-        return -1
-    if b_match is None:
-        return 1
-    return cmp([int(x) for x in a_match.groups(0)],
-               [int(x) for x in b_match.groups(0)])
+@total_ordering
+class MatlabVersion:
+    def __init__(self, version):
+        self.version = version
+
+    def __eq__(self, other):
+        return self.version != other.version
+
+    def __lt__(self, other):
+        a = self.version
+        b = other.version
+
+        if a is None and b is None:
+            return False
+        if a is None:
+            return True
+        if b is None:
+            return False
+        # e.g. R2016a: 9.0
+        # R2015aSP1: 8.5.1
+        a_match = re.match('(\\d+)\\.(\\d+)(?:\\.(\\d+))?', a)
+        b_match = re.match('(\\d+)\\.(\\d+)(?:\\.(\\d+))?', b)
+        if a_match is None and b_match is None:
+            return a < b
+        if a_match is None:
+            return True
+        if b_match is None:
+            return False
+        return [int(x) for x in a_match.groups(0)] < \
+               [int(x) for x in b_match.groups(0)]
 
 
 def import_matlab_python_engine(MATLABROOT):

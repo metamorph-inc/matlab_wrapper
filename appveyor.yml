@@ -1,16 +1,19 @@
 environment:
   matrix:
-    - PYTHON: "C:\\Python27"
-      PYTHON_x64: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python27-x64"
-      PYTHON_x64: "C:\\Python27-x64"
     - PYTHON: "C:\\Python39"
       PYTHON_x64: "C:\\Python39-x64"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    - PYTHON: "C:\\Python310"
+      PYTHON_x64: "C:\\Python310-x64"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    - PYTHON: "C:\\Python311"
+      PYTHON_x64: "C:\\Python311-x64"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
 cache:
   - '%LOCALAPPDATA%\pip\cache -> requirements.txt'
 install:
   - '%PYTHON%\python -m virtualenv venv'
-  - '.\venv\Scripts\pip install --upgrade "setuptools<45.0.0" -r requirements.txt nose'
+  - '.\venv\Scripts\pip install -r requirements.txt pytest'
 build_script:
 #  - '.\venv\Scripts\python setup.py build_ext --inplace'
   - '.\venv\Scripts\python setup.py bdist_wheel'
@@ -28,7 +31,8 @@ after_build:
   - ps: Get-ChildItem dist\* | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName matlab_wrapper }
   - ps: Get-ChildItem matlab_proxy\dist\* | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName matlab_proxy }
 test_script:
-  - '.\venv\Scripts\nosetests'
+  - 'set PYTHONPATH=%CD%\matlab_proxy'
+  - '.\venv\Scripts\pytest'
 #  nosetests.exe --with-coverage --cover-html --traverse-namespace --cover-branches --cover-erase --cover-tests
 #  coverage html -d cover
 
