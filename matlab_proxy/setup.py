@@ -26,7 +26,7 @@ with open('MANIFEST.in', 'w') as manifest:
 setup(
     name="matlab_proxy",
     version="0.13",
-    packages=['matlab_proxy'],
+    packages=['matlab_proxy', 'matlab_proxy.dist_64bit'],
     include_package_data=True,
     zip_safe=False,
     options={"py2exe": {
@@ -34,13 +34,16 @@ setup(
                         # 'unbuffered': True,
                         "dll_excludes": ['w9xpopen.exe'],
                         "excludes": """Tkinter tkinter _tkinter tcl tk Tkconstants matlab matlab.engine site doctest
-                            _ctypes _hashlib _socket _ssl bz2 pyexpat select""".split(),
-                        "includes": ["pkgutil", "importlib"],
+                            _hashlib _socket _ssl bz2 pyexpat select""".split(),
+                        "includes": ["pkgutil", "importlib", "six", "ctypes", "_ctypes"],
                         "dist_dir": 'matlab_proxy/dist_' + platform.architecture()[0]
 
                         }},
     zipfile="Python{}{}.zip".format(*sys.version_info[0:2]),
-    console=[{'script': "matlab_proxy/__init__.py"}],
+    console=[{
+        # "dest_base" : "matlab_proxy",
+        "script": "matlab_proxy/__init__.py",
+    }],
 )
 
 if sys.argv[1] == 'py2exe':

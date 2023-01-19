@@ -1,13 +1,13 @@
 environment:
   matrix:
     - PYTHON: "C:\\Python39"
-      PYTHON_x64: "C:\\Python39-x64"
+      PYTHON_MATLAB_PROXY: "C:\\Python38-x64"
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     - PYTHON: "C:\\Python310"
-      PYTHON_x64: "C:\\Python310-x64"
+      PYTHON_MATLAB_PROXY: "C:\\Python38-x64"
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     - PYTHON: "C:\\Python311"
-      PYTHON_x64: "C:\\Python311-x64"
+      PYTHON_MATLAB_PROXY: "C:\\Python38-x64"
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
 cache:
   - '%LOCALAPPDATA%\pip\cache -> requirements.txt'
@@ -19,7 +19,7 @@ build_script:
   - '.\venv\Scripts\python setup.py bdist_wheel'
 
   - 'cd matlab_proxy'
-  - '%PYTHON_x64%\python -m virtualenv venv'
+  - '%PYTHON_MATLAB_PROXY%\python -m virtualenv venv'
   - '.\venv\Scripts\pip install -r requirements.txt'
   - '.\venv\Scripts\python setup.py py2exe'
   - '.\venv\Scripts\python setup.py bdist_wheel -p win32'
