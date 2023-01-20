@@ -26,7 +26,7 @@ with open('MANIFEST.in', 'w') as manifest:
 setup(
     name="matlab_proxy",
     version="0.13",
-    packages=['matlab_proxy', 'matlab_proxy.dist_64bit'],
+    packages=['matlab_proxy'],
     include_package_data=True,
     zip_safe=False,
     options={"py2exe": {
