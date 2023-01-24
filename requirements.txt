@@ -12,7 +12,7 @@ numpy==1.22.4; sys_platform == 'win32'
 numpy; sys_platform != 'win32'
 scipy==1.8.1; sys_platform == 'win32'
 scipy; sys_platform != 'win32'
-smop==0.23+g9bf6295
+smop==0.23+g6da7fc7
 six~=1.10.0
 openmdao==1.*
 
