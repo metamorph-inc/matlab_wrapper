@@ -42,7 +42,8 @@ deploy:
     draft: false
     prerelease: false
     auth_token:
-      secure: 6Eoe7p9mqStkqanseUsqMedSW6iSeR58OIaqbmDGAnsitnL5gstRs2MqBwjFKBUq
+      # metamorph-jenkins matlab_wrapper-appveyor
+      secure: cmbLPoKTtlQRfTodhYgt7ltVCSkgo6E38sNgVo6vV0kKuXTP6Q4zvocsjenRJgZa
     on:
       appveyor_repo_tag: true
   - provider: S3
