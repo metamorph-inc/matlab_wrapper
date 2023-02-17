@@ -36,16 +36,13 @@ setup(
                         "excludes": """Tkinter tkinter _tkinter tcl tk Tkconstants matlab matlab.engine site doctest
                             _hashlib _socket _ssl bz2 pyexpat select""".split(),
                         "includes": ["pkgutil", "importlib", "six", "ctypes", "_ctypes"],
-                        "dist_dir": 'matlab_proxy/dist_' + platform.architecture()[0]
+                        "dist_dir": 'matlab_proxy/dist_' + platform.architecture()[0],
+                        "unbuffered": True,
 
                         }},
     zipfile="Python{}{}.zip".format(*sys.version_info[0:2]),
     console=[{
-        # "dest_base" : "matlab_proxy",
+        "dest_base" : "matlab_proxy",
         "script": "matlab_proxy/__init__.py",
     }],
 )
-
-if sys.argv[1] == 'py2exe':
-    shutil.copyfile(sys.executable, os.path.join('matlab_proxy/dist_' + platform.architecture()[0], os.path.basename(sys.executable)))
-    os.unlink(os.path.join('matlab_proxy/dist_' + platform.architecture()[0], '__init__.exe'))

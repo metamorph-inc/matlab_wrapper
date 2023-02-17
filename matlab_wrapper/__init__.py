@@ -110,13 +110,13 @@ class MatlabWrapper(Component):
                 try:
                     unknowns[name] = output
                 except ValueError as e:
-                    six.reraise(ValueError, ValueError('Could not set output {}.{}: {}'.format(self.name, name, e.message)))
+                    six.reraise(ValueError, ValueError('Could not set output {}.{}: {}'.format(self.name, name, e.args[0])))
 
         try:
             outputs = getattr(self.eng, self.basename)(args, nargout=len(self._output_names), bare=self.bare, stdout=sys.stdout, stderr=sys.stderr,
                 input_names=self._input_names, output_names=self._output_names)
         except AnalysisError as e:
-            print('Error in {}: {}'.format(self.name, e.message))
+            print('Error in {}: {}'.format(self.name, e.args[0]))
             raise
         # isinstance(numpy.float64(), float) => True
         if len(self._output_names) == 1 and isinstance(outputs, float):

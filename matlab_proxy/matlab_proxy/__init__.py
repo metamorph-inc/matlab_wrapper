@@ -1,7 +1,6 @@
 import sys
 import six
 import pickle
-import json
 import re
 import os
 import os.path
@@ -12,6 +11,8 @@ from contextlib import contextmanager
 
 from base64 import b64encode, b64decode
 from functools import total_ordering
+
+DEBUG = False
 
 
 class AnalysisError(Exception):
@@ -34,7 +35,6 @@ class MatlabInProcessProxyReplacement(object):
             import openmdao.api
             import matlab
             import matlab.engine
-            import matlab.mlarray
 
             def transcode(val):
                 if numpy and isinstance(val, numpy.ndarray):
@@ -44,13 +44,16 @@ class MatlabInProcessProxyReplacement(object):
                 return val
             args = [transcode(val) for val in args]
             def convert_to_list(array, size=None):
-                if not isinstance(array, matlab.mlarray.double):
+                if not isinstance(array, matlab.double):
                     return array
                 if size is None:
                     size = array.size
                 if len(size) == 1:
                     return list(array)
                 return list((convert_to_list(l, size[1:]) for l in array))
+
+            string_stdout = six.StringIO()
+            string_stderr = six.StringIO()
 
             try:
                 if bare:
@@ -65,7 +68,7 @@ class MatlabInProcessProxyReplacement(object):
                                 arg = matlab.double(arg)
                         self.engine.workspace[str(input_name)] = arg
 
-                    getattr(self.engine, name)(nargout=nargout, stdout=stdout, stderr=stderr)
+                    getattr(self.engine, name)(nargout=nargout, stdout=string_stdout, stderr=string_stderr)
                     outputs = []
 
                     for output_name in output_names:
@@ -74,16 +77,22 @@ class MatlabInProcessProxyReplacement(object):
                         outputs.append(output)
                     # open('debug.txt', 'a').write(repr(outputs) + '\n')
                 else:
-                    outputs = getattr(self.engine, name)(*args, nargout=nargout, stdout=stdout, stderr=stderr)
+                    outputs = getattr(self.engine, name)(*args, nargout=nargout, stdout=string_stdout, stderr=string_stderr)
                     if type(outputs) == tuple:
                         outputs = tuple(map(convert_to_list, outputs))
                     else:
                         outputs = convert_to_list(outputs)
             except Exception as e:
+                stdout.write(string_stdout.getvalue())
+                stderr.write(string_stderr.getvalue())
                 if type(e).__module__ in ('matlab', 'matlab.engine'):
                     e = openmdao.api.AnalysisError(getattr(e, 'message', getattr(e, 'args', ['unknown MATLAB exception'])[0]))
                     raise e
+                raise
 
+
+            stdout.write(string_stdout.getvalue())
+            stderr.write(string_stderr.getvalue())
 
             # print(repr(outputs))
             return outputs
@@ -105,10 +114,8 @@ class EngineProxyServer(object):
     def invoke(self, name, args, nargout, bare, input_names, output_names):
         import matlab
         import matlab.engine
-        import matlab.mlarray
         out = six.StringIO()
         err = six.StringIO()
-        args = pickle.loads(b64decode(args))
 
         def convert_arg_to_matlab_datatype(arg):
             if isinstance(arg, list):
@@ -122,10 +129,14 @@ class EngineProxyServer(object):
                 return arg
             else:
                 return arg
-                
+
         def convert_to_list(array, size=None):
-            if not isinstance(array, matlab.mlarray.double):
-                return array
+            if array is None:
+                return None
+            if isinstance(array, list):
+                return [convert_dictionary_contents_to_list(v) for v in array]
+            if not isinstance(array, matlab.double):
+               return array
             if size is None:
                 size = array.size
             if len(size) == 1:
@@ -147,9 +158,9 @@ class EngineProxyServer(object):
                 arg = convert_arg_to_matlab_datatype(args[i])
 
                 try:
-                    self.engine.workspace[input_name.encode('ascii', 'ignore')] = arg
+                    self.engine.workspace[input_name] = arg
                 except ValueError as e:
-                    if e.message == 'invalid field for MATLAB struct':
+                    if e.args[0] == 'invalid field for MATLAB struct':
                         for name in arg:
                             if not re.match('^[a-zA-Z][a-zA-Z0-9_]{0,62}$', name):
                                 raise ValueError('invalid field for MATLAB struct "{0}". '.format(name) +
@@ -177,7 +188,7 @@ class EngineProxyServer(object):
                 output = self.engine.workspace[str(output_name)]
                 output = convert_dictionary_contents_to_list(output)
                 outputs.append(output)
-                
+
             # debug_file.write("MATLAB outputs - processed:"+'\n')
             # debug_file.write(repr(outputs) + '\n')
             # debug_file.write("Done."+'\n')
@@ -237,10 +248,9 @@ class EngineProxyClient(object):
             # (*args, nargout=len(self._output_names), stdout=out, stderr=err)
             args = list(map(transcode, args))
             kwargs = {k: transcode(v) for k, v in six.iteritems(kwargs)}
-            
-            # need to pickle here in case args contains type information lost during json transform (eg. int vs float)
+
             try:
-                ret = self.proxy.invoke(name, b64encode(pickle.dumps(args)), kwargs.get('nargout'), bare=kwargs['bare'],
+                ret = self.proxy.invoke(name, args, kwargs.get('nargout'), bare=kwargs['bare'],
                     input_names=kwargs['input_names'], output_names=kwargs['output_names'])
                 for output in ('stdout', 'stderr'):
                     stdout = kwargs.get(output)
@@ -271,9 +281,10 @@ def get_matlab_engine():
         if matlab[0] == platform.architecture()[0]:
             MATLABROOT = matlab[2]
             engine = import_matlab_python_engine(MATLABROOT)
-            return MatlabInProcessProxyReplacement(engine.start_matlab())
+            with matlab_in_env_path(MATLABROOT, platform.architecture()[0]):
+                return MatlabInProcessProxyReplacement(engine.start_matlab())
         else:
-            python_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dist_{}\\python.exe'.format(matlab[0]))
+            python_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dist_{}\\matlab_proxy.exe'.format(matlab[0]))
             if not os.path.isfile(python_exe):
                 raise Exception("'{}' does not exist. Run `setup.py py2exe` with Python {} in the matlab_proxy dir".format(python_exe, matlab[0]))
             return get_engine_proxy(matlab[2], python_exe, matlab[0])
@@ -287,15 +298,17 @@ def get_matlab_engine():
 
 @contextmanager
 def matlab_in_env_path(MATLABROOT, target_architecture):
+    # e.g. C:\Program Files\MATLAB\R2022b\bin\win64\libmx.dll
     win_bit = {'32bit': 'win32',
             '64bit': 'win64'}[target_architecture]
     old_path = os.environ['PATH']
-    os.environ['PATH'] = r'{}\bin\{}'.format(MATLABROOT, win_bit) + os.pathsep + os.environ['PATH']
+    os.environ['PATH'] = os.path.join(MATLABROOT, 'bin', win_bit) + os.pathsep + os.environ['PATH']
     # numpy modifies PATH to add tbb.dll et al. But its tbb.dll is incompatible with MATLAB's
     # os.environ['PATH'] = os.pathsep.join(p for p in os.environ['PATH'].split(os.pathsep) if 'numpy' not in p)
-
     try:
-        yield None
+        # `import` uses LOAD_LIBRARY_SEARCH_DEFAULT_DIRS now ; https://bugs.python.org/issue36085 ; don't try PATH
+        with os.add_dll_directory(os.path.join(MATLABROOT, 'bin', win_bit)):
+            yield None
     finally:
         os.environ['PATH'] = old_path
 
@@ -304,25 +317,34 @@ def get_engine_proxy(MATLABROOT, python_exe, target_architecture):
     import openmdao.api
 
     with matlab_in_env_path(MATLABROOT, target_architecture):
-        worker = subprocess.Popen([python_exe, '-E', '-S', '-u', os.path.abspath(__file__), MATLABROOT],
-            stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+        # test with python.exe: python_exe = r"C:\Users\kevin\Documents\matlab_wrapper\env310_64\Scripts\python.exe" and add os.path.abspath(__file__),
+        worker = subprocess.Popen([python_exe, MATLABROOT],
+            stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf8', bufsize=1)
 
-    magic = worker.stdout.readline().rstrip('\n')
+    def read():
+        return worker.stdout.readline()
+
+    def write(output):
+        worker.stdin.write(output)
+
+    magic = read().rstrip('\n')
     if magic != HANDSHAKE_MAGIC:
         rest, _ = worker.communicate()
         raise Exception(magic + '\n' + rest)
 
     def dispatch(method, *args, **kwargs):
-        worker.stdin.write(method + '\n')
+        write(method + '\n')
         # print >> sys.stderr, "AAArgs:", args
-        worker.stdin.write(json.dumps(args, ensure_ascii=False) + '\n')
-        worker.stdin.write(json.dumps(kwargs, ensure_ascii=False) + '\n')
-        e_str = worker.stdout.readline().rstrip('\n')
-        # print >> sys.stderr, "XXX:", e_str, "---", len(e_str)
-        e = pickle.loads(b64decode(json.loads(e_str)))
-        ret_str = worker.stdout.readline().rstrip('\n')
+
+        write(b64encode(pickle.dumps(args)).decode('ascii') + '\n')
+        write(b64encode(pickle.dumps(kwargs)).decode('ascii') + '\n')
+        error_str = read().rstrip('\n').encode('ascii')
+        # print("XXX:", error_str, "---", len(error_str), file=sys.stderr)
+        # import pdb; pdb.set_trace()  # p read()
+        e = pickle.loads(b64decode(error_str))
+        ret_str = read().rstrip('\n').encode('ascii')
         # print >> sys.stderr, "YYY:", ret_str, "---", len(ret_str)
-        ret = pickle.loads(b64decode(json.loads(ret_str)))
+        ret = pickle.loads(b64decode(ret_str))
         if e:
             if isinstance(e, AnalysisError):
                 original_exception = e
@@ -421,29 +443,119 @@ class MatlabVersion:
 
 
 def import_matlab_python_engine(MATLABROOT):
+    engine = sys.modules.get('matlab.engine')
+    if engine:
+        return engine
     with matlab_in_env_path(MATLABROOT, platform.architecture()[0]):
         win_bit = {'32bit': 'win32',
             '64bit': 'win64'}[platform.architecture()[0]]
 
         sys.path.insert(0, r"{}\extern\engines\python\dist\matlab\engine\{}".format(MATLABROOT, win_bit))
         sys.path.insert(1, r"{}\extern\engines\python\dist".format(MATLABROOT))
+
         try:
+            import shlex  # needed by matlab.engine.matlabfuture; import here so py2exe sees it
             import importlib
-            importlib.import_module('matlabengineforpython{}'.format('_'.join(map(str, sys.version_info[0:2]))))
-            from matlab import engine
-            return engine
+            os.environ['MWE_INSTALL'] = MATLABROOT
+            # importlib.import_module('matlabengineforpython{}'.format('_'.join(map(str, sys.version_info[0:2]))))
+            import matlab.engine
+            import matlab
+            return matlab.engine
         finally:
             del sys.path[:2]
 
 HANDSHAKE_MAGIC = 'matlab_\bproxy'
 
-if __name__ == '__main__':
+def main():
     import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument('MATLABROOT')
     args = parser.parse_args()
 
+    MATLABROOT = args.MATLABROOT
+
+    engine = EngineProxyServer(import_matlab_python_engine(MATLABROOT).start_matlab())
+
+    if DEBUG:
+        debug_log = open('matlab_proxy_debug.log', 'wt')
+        def debug(line):
+            debug_log.write(line + '\n')
+            debug_log.flush()
+    else:
+        def debug(line):
+            pass
+
+    def write(output):
+        sys.stdout.write(output)
+        sys.stdout.flush()
+        if DEBUG:
+            debug('write {output!r}')
+
+    def read():
+        line = sys.stdin.readline()
+        if DEBUG:
+            debug(f'read {line!r}')
+        return line
+
+    write(HANDSHAKE_MAGIC + '\n')
+
+    while True:
+        # debug = open('method.txt', 'wb')
+        # while True:
+        #    debug.write(read())
+        #    debug.flush()
+        method = read().rstrip('\n')
+        args = read().rstrip('\n').encode('ascii')
+        kwargs = read().rstrip('\n').encode('ascii')
+
+        args = pickle.loads(b64decode(args))
+        kwargs = pickle.loads(b64decode(kwargs))
+        # except binascii.Error:
+
+        e = None
+        ret = None
+        try:
+            ret = getattr(engine, method)(*args, **kwargs)
+        except Exception as err:
+            e = err
+            if os.environ.get('MATLAB_PROXY_DEBUG'):
+                import traceback
+                traceback.print_exc(100, open('exception{}.txt'.format(method), 'w'))
+            # n.b. consumer doesn't have these modules, so create an exception of a different type
+            if type(e).__module__ in ('matlab', 'matlab.engine'):
+                original_exception = e
+                e = AnalysisError(getattr(e, 'message', getattr(e, 'args', ['unknown MATLAB exception'])[0]))
+                e.matlab_proxy_stdout = getattr(original_exception, "matlab_proxy_stdout", "")
+                e.matlab_proxy_stderr = getattr(original_exception, "matlab_proxy_stderr", "")
+
+        error_str = b64encode(pickle.dumps(e)).decode('ascii')
+        write(error_str + '\n')
+        # open('exception{}.txt'.format(method), 'w').write(pickle.dumps(ret))
+        write(b64encode(pickle.dumps(ret)).decode('ascii') + '\n')
+        if method == 'quit':
+            break
+
+@contextmanager
+def _with_coverage():
+    # comment these so py2exe doesn't see it
+    # import coverage
+    # from datetime import datetime
+
+    timestamp = datetime.timestamp(datetime.now())
+    date_time = datetime.fromtimestamp(timestamp)
+
+    cov = coverage.Coverage(data_file='coverage-' + date_time.strftime("%Y%m%d_%H%M%S"))
+    cov.load()
+    cov.start()
+
+    yield None
+
+    cov.stop()
+    cov.save()
+
+
+if __name__ == '__main__':
     # move __main__.AnalysisError to matlab_proxy.AnalysisError so the client can unpickle it
     # (these few lines are easier than ensuring matlab_proxy can be imported in all cases)
     from types import ModuleType
@@ -453,37 +565,5 @@ if __name__ == '__main__':
     AnalysisError = matlab_proxy.AnalysisError
     sys.modules['matlab_proxy'] = matlab_proxy
 
-    MATLABROOT = args.MATLABROOT
-
-    engine = EngineProxyServer(import_matlab_python_engine(MATLABROOT).start_matlab())
-    sys.stdout.write(HANDSHAKE_MAGIC + '\n')
-
-    while True:
-        # debug = open('method.txt', 'wb')
-        # while True:
-        #    debug.write(sys.stdin.readline())
-        #    debug.flush()
-        method = sys.stdin.readline().rstrip('\n')
-        args = sys.stdin.readline().rstrip('\n')
-        args = json.loads(args)
-        kwargs = json.loads(sys.stdin.readline().rstrip('\n'))
-        e = None
-        ret = None
-        try:
-            ret = getattr(engine, method)(*args, **kwargs)
-        except Exception as e:
-            # import traceback
-            # traceback.print_exc(100, open('exception{}.txt'.format(method), 'w'))
-            # n.b. consumer doesn't have these modules, so create an exception of a different type
-            if type(e).__module__ in ('matlab', 'matlab.engine'):
-                original_exception = e
-                e = AnalysisError(getattr(e, 'message', getattr(e, 'args', ['unknown MATLAB exception'])[0]))
-                e.matlab_proxy_stdout = getattr(original_exception, "matlab_proxy_stdout", "")
-                e.matlab_proxy_stderr = getattr(original_exception, "matlab_proxy_stderr", "")
-
-        sys.stdout.write(json.dumps(b64encode(pickle.dumps(e))) + '\n')
-        # open('exception{}.txt'.format(method), 'w').write(pickle.dumps(ret))
-        sys.stdout.write(json.dumps(b64encode(pickle.dumps(ret))) + '\n')
-        sys.stdout.flush()
-        if method == 'quit':
-            break
+    # with _with_coverage():
+    main()
