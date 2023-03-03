@@ -12,6 +12,16 @@ from contextlib import contextmanager
 from base64 import b64encode, b64decode
 from functools import total_ordering
 
+if sys.version_info[0:2] >= (3, 8):
+    from os import add_dll_directory
+else:
+    # can use PATH with these versions
+    @contextmanager
+    def add_dll_directory(directory):
+        os.environ['PATH'] = directory + os.pathsep + os.environ['PATH']
+        yield None
+
+
 DEBUG = False
 
 
@@ -284,7 +294,17 @@ def get_matlab_engine():
             with matlab_in_env_path(MATLABROOT, platform.architecture()[0]):
                 return MatlabInProcessProxyReplacement(engine.start_matlab())
         else:
-            python_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dist_{}\\matlab_proxy.exe'.format(matlab[0]))
+            if six.PY2:
+                proxy_python_version = ''.join((str(v) for v in sys.version_info[0:2]))
+            else:
+                # https://www.mathworks.com/support/requirements/python-compatibility.html
+                # R2021a is 9.10
+                if MatlabVersion(matlab[1]) <= MatlabVersion('9.10'):
+                    proxy_python_version = '37'
+                else:
+                    proxy_python_version = '39'
+
+            python_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dist_{}_{}\\matlab_proxy.exe'.format(proxy_python_version, matlab[0]))
             if not os.path.isfile(python_exe):
                 raise Exception("'{}' does not exist. Run `setup.py py2exe` with Python {} in the matlab_proxy dir".format(python_exe, matlab[0]))
             return get_engine_proxy(matlab[2], python_exe, matlab[0])
@@ -306,8 +326,8 @@ def matlab_in_env_path(MATLABROOT, target_architecture):
     # numpy modifies PATH to add tbb.dll et al. But its tbb.dll is incompatible with MATLAB's
     # os.environ['PATH'] = os.pathsep.join(p for p in os.environ['PATH'].split(os.pathsep) if 'numpy' not in p)
     try:
-        # `import` uses LOAD_LIBRARY_SEARCH_DEFAULT_DIRS now ; https://bugs.python.org/issue36085 ; don't try PATH
-        with os.add_dll_directory(os.path.join(MATLABROOT, 'bin', win_bit)):
+        # `import` uses LOAD_LIBRARY_SEARCH_DEFAULT_DIRS in Python >=3.8; https://bugs.python.org/issue36085 ; don't try PATH
+        with add_dll_directory(os.path.join(MATLABROOT, 'bin', win_bit)):
             yield None
     finally:
         os.environ['PATH'] = old_path
@@ -318,19 +338,24 @@ def get_engine_proxy(MATLABROOT, python_exe, target_architecture):
 
     with matlab_in_env_path(MATLABROOT, target_architecture):
         # test with python.exe: python_exe = r"C:\Users\kevin\Documents\matlab_wrapper\env310_64\Scripts\python.exe" and add os.path.abspath(__file__),
-        worker = subprocess.Popen([python_exe, MATLABROOT],
-            stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf8', bufsize=1)
+
+        kwargs = dict(stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+        if not six.PY2:
+            kwargs['encoding'] = 'utf8'
+        worker = subprocess.Popen([python_exe, MATLABROOT], **kwargs)
 
     def read():
         return worker.stdout.readline()
 
     def write(output):
         worker.stdin.write(output)
+        if six.PY2:
+            worker.stdin.flush()
 
     magic = read().rstrip('\n')
     if magic != HANDSHAKE_MAGIC:
         rest, _ = worker.communicate()
-        raise Exception(magic + '\n' + rest)
+        raise Exception(repr(magic) + '\n' + rest)
 
     def dispatch(method, *args, **kwargs):
         write(method + '\n')
@@ -477,6 +502,10 @@ def main():
     parser.add_argument('MATLABROOT')
     args = parser.parse_args()
 
+    if sys.platform == "win32" and six.PY2:
+        import msvcrt
+        msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+
     MATLABROOT = args.MATLABROOT
 
     engine = EngineProxyServer(import_matlab_python_engine(MATLABROOT).start_matlab())
@@ -494,12 +523,12 @@ def main():
         sys.stdout.write(output)
         sys.stdout.flush()
         if DEBUG:
-            debug('write {output!r}')
+            debug('write {output!r}'.format(output=output))
 
     def read():
         line = sys.stdin.readline()
         if DEBUG:
-            debug(f'read {line!r}')
+            debug('read {line!r}'.format(line=line))
         return line
 
     write(HANDSHAKE_MAGIC + '\n')

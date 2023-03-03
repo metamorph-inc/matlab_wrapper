@@ -1,32 +1,37 @@
 environment:
   matrix:
+    - PYTHON: "C:\\Python27"
+      PYTHON_MAJOR: 2
     - PYTHON: "C:\\Python39"
-      PYTHON_MATLAB_PROXY: "C:\\Python38-x64"
+      PYTHON_MAJOR: 3
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     - PYTHON: "C:\\Python310"
-      PYTHON_MATLAB_PROXY: "C:\\Python38-x64"
+      PYTHON_MAJOR: 3
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     - PYTHON: "C:\\Python311"
-      PYTHON_MATLAB_PROXY: "C:\\Python38-x64"
+      PYTHON_MAJOR: 3
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
 cache:
   - '%LOCALAPPDATA%\pip\cache -> requirements.txt'
 install:
   - '%PYTHON%\python -m virtualenv venv'
-  - '.\venv\Scripts\pip install -r requirements.txt pytest'
+  - '.\venv\Scripts\pip install --extra-index-url https://pypi.metamorphsoftware.com -r requirements.txt pytest'
 build_script:
-#  - '.\venv\Scripts\python setup.py build_ext --inplace'
   - '.\venv\Scripts\python setup.py bdist_wheel'
 
   - 'cd matlab_proxy'
-  - '%PYTHON_MATLAB_PROXY%\python -m virtualenv venv'
+
+  - if %PYTHON_MAJOR% == 3 ( C:\Python37-x64\python -m virtualenv env_37_x64 && .\env_37_x64\Scripts\python -m pip install six py2exe && .\env_37_x64\Scripts\python setup.py py2exe || exit 1)
+  - if %PYTHON_MAJOR% == 3 ( C:\Python39-x64\python -m virtualenv venv && .\venv\Scripts\python -m pip install six py2exe && .\venv\Scripts\python setup.py py2exe || exit 1)
+
+  - if %PYTHON_MAJOR% == 2 ( C:\Python27-x64\python -m virtualenv venv && .\venv\Scripts\python -m pip install --extra-index-url https://pypi.metamorphsoftware.com/ six py2exe && .\venv\Scripts\python setup.py py2exe || exit 1)
+
   - '.\venv\Scripts\pip install -r requirements.txt'
-  - '.\venv\Scripts\python setup.py py2exe'
   - '.\venv\Scripts\python setup.py bdist_wheel -p win32'
   - 'rd /s/q build'
   - '.\venv\Scripts\python setup.py bdist_wheel'
   - 'cd ..'
-  
+
 after_build:
   - ps: Get-ChildItem dist\* | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName matlab_wrapper }
   - ps: Get-ChildItem matlab_proxy\dist\* | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name -DeploymentName matlab_proxy }

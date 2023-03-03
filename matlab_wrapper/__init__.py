@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import sys
-import collections, collections.abc
+import collections
 if sys.version_info >= (3, 10):
+    import collections.abc
     collections.Iterable = collections.abc.Iterable  # openmdao==1.7.4 doesn't know about this rename
 if sys.version_info >= (3, 9):
     import math

@@ -18,10 +18,21 @@ if sys.argv[1] == 'py2exe':
     import py2exe
 
 with open('MANIFEST.in', 'w') as manifest:
-    if 'bdist_wheel' in sys.argv and 'win32' in sys.argv:
-        manifest.write('recursive-include matlab_proxy/dist_{} *\n'.format(platform.architecture()[0]))
+    if sys.version_info[0] == 2:
+        dist_dirs = ['matlab_proxy/dist_27_64bit']
     else:
-        manifest.write('prune matlab_proxy/dist_64bit\n')
+        dist_dirs = ['matlab_proxy/dist_37_64bit', 'matlab_proxy/dist_39_64bit']
+    if 'bdist_wheel' in sys.argv and 'win32' in sys.argv:
+        line = 'recursive-include {} *\n'
+    else:
+        line = 'prune {}\n'
+    for dist_dir in dist_dirs:
+        manifest.write(line.format(dist_dir))
+
+includes = ["pkgutil", "importlib", "six", "ctypes", "_ctypes"]
+
+if sys.version_info[0:2] == (3, 7):
+    includes.append("imp")
 
 setup(
     name="matlab_proxy",
@@ -35,8 +46,8 @@ setup(
                         "dll_excludes": ['w9xpopen.exe'],
                         "excludes": """Tkinter tkinter _tkinter tcl tk Tkconstants matlab matlab.engine site doctest
                             _hashlib _socket _ssl bz2 pyexpat select""".split(),
-                        "includes": ["pkgutil", "importlib", "six", "ctypes", "_ctypes"],
-                        "dist_dir": 'matlab_proxy/dist_' + platform.architecture()[0],
+                        "includes": includes,
+                        "dist_dir": 'matlab_proxy/dist_' + ''.join((str(v) for v in sys.version_info[0:2])) + '_' + platform.architecture()[0],
                         "unbuffered": True,
 
                         }},
