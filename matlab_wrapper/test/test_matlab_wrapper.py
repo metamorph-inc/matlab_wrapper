@@ -106,6 +106,12 @@ class TestMatlabVersion(unittest.TestCase):
         matlab_versions.sort()
         self.assertEqual([None, 'wat', '5.4', '5.5', '5.11', '8.4', '9.3', '9.3.1', '9.3.2', '10.1', '10.2'], [v.version for v in matlab_versions])
 
+        MatlabVersion = matlab_proxy.MatlabVersion
+        self.assertFalse(MatlabVersion('9.15') == (MatlabVersion('9.14')))
+        self.assertTrue(MatlabVersion('9.15') != (MatlabVersion('9.14')))
+        self.assertFalse(MatlabVersion('9.15') < (MatlabVersion('9.14')))
+        self.assertTrue(MatlabVersion('9.15') > (MatlabVersion('9.14')))
+
     def test_get_preferred_matlab(self):
         # cannot rely on the output, but must not crash
         print(matlab_proxy.get_preferred_matlab())

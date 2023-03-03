@@ -389,16 +389,17 @@ def get_preferred_matlab():
                 if e.winerror != 259:
                     raise
             matlab_versions.sort()
-            for matlab_version in matlab_versions:
-                with winreg.OpenKey(matlab, matlab_version.version, 0, winreg.KEY_READ | reg_wow64) as matlab_version_key:
-                    try:
-                        value, type_ = winreg.QueryValueEx(matlab_version_key, 'MATLABROOT')
-                    except WindowsError as e:
-                        if e.winerror != 2:
-                            raise
-                    else:
-                        if type_ in (winreg.REG_SZ, winreg.REG_EXPAND_SZ):
-                            return (matlab_version, value)
+
+            matlab_version = matlab_versions[-1]
+            with winreg.OpenKey(matlab, matlab_version.version, 0, winreg.KEY_READ | reg_wow64) as matlab_version_key:
+                try:
+                    value, type_ = winreg.QueryValueEx(matlab_version_key, 'MATLABROOT')
+                except WindowsError as e:
+                    if e.winerror != 2:
+                        raise
+                else:
+                    if type_ in (winreg.REG_SZ, winreg.REG_EXPAND_SZ):
+                        return (matlab_version, value)
 
     m64 = get_latest_matlab(winreg.KEY_WOW64_64KEY)
     m32 = get_latest_matlab(winreg.KEY_WOW64_32KEY)
@@ -415,8 +416,11 @@ class MatlabVersion:
     def __init__(self, version):
         self.version = version
 
+    def __repr__(self):
+        return 'MatlabVersion(' + repr(self.version) + ')'
+
     def __eq__(self, other):
-        return self.version != other.version
+        return self.version == other.version
 
     def __lt__(self, other):
         a = self.version
